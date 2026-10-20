@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MISI PEMBANTERAS BULI: SELAMATKAN AMIR!</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Pustaka MediaPipe Hands & Camera Utils (Memerlukan sambungan internet) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --font-heading: 'Fredoka', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--font-body);
+      background: radial-gradient(circle at top left, #1e3a8a 0%, #0f172a 55%, #090d16 100%);
+      color: #f8fafc;
+      min-width: 1200px;
+      overflow-x: auto;
+      user-select: none;
+    }
+    h1, h2, h3, .font-heading {
+      font-family: var(--font-heading);
+      letter-spacing: 0.02em;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(14px);
+      border: 2px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+    .card-option {
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+      touch-action: none;
+      cursor: grab;
+    }
+    .card-option:active {
+      cursor: grabbing;
+    }
+    .card-option.hovered-by-hand {
+      transform: scale(1.03) translateY(-3px);
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.65);
+    }
+    .card-option.grabbed {
+      position: fixed !important;
+      z-index: 9990 !important;
+      pointer-events: none !important;
+      transform: scale(1.06) rotate(-1deg) !important;
+      border-color: #facc15 !important;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.75), 0 0 30px rgba(250, 204, 21, 0.85) !important;
+      transition: none !important;
+    }
+    .dropzone-box {
+      transition: all 0.22s ease;
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(30, 41, 59, 0.7),
+        rgba(30, 41, 59, 0.7) 14px,
+        rgba(15, 23, 42, 0.85) 14px,
+        rgba(15, 23, 42, 0.85) 28px
+      );
+    }
+    .dropzone-box.active-hover {
+      border-color: #facc15 !important;
+      background: rgba(250, 204, 21, 0.16) !important;
+      box-shadow: 0 0 35px rgba(250, 204, 21, 0.5), inset 0 0 20px rgba(250, 204, 21, 0.25);
+      transform: scale(1.02);
+    }
+    .dropzone-box.locked-correct {
+      border-color: #22d3ee !important;
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.28), rgba(16, 185, 129, 0.28)) !important;
+      box-shadow: 0 0 35px rgba(34, 211, 238, 0.65), inset 0 0 20px rgba(34, 211, 238, 0.35);
+    }
+    .dropzone-box.locked-wrong {
+      border-color: #fb923c !important;
+      background: linear-gradient(135deg, rgba(251, 146, 60, 0.25), rgba(239, 68, 68, 0.2)) !important;
+      box-shadow: 0 0 30px rgba(251, 146, 60, 0.5);
+    }
+    #virtual-cursor {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 54px;
+      height: 54px;
+      margin-left: -27px;
+      margin-top: -27px;
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+      transition: transform 0.08s ease-out;
+    }
+    #virtual-cursor.pinching .cursor-ring {
+      border-color: #facc15;
+      background: rgba(250, 204, 21, 0.35);
+      transform: scale(0.78);
+      box-shadow: 0 0 28px #facc15, 0 0 50px #38bdf8;
+    }
+    .cursor-ring {
+      width: 100%;
+      height: 100%;
+      border-radius: 9999px;
+      border: 4px solid #38bdf8;
+      background: rgba(56, 189, 248, 0.18);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s ease;
+    }
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    .animate-float {
+      animation: floatSlow 3.2s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+      50% { box-shadow: 0 0 28px rgba(250, 204, 21, 0.85); }
+    }
+    .pulse-badge {
+      animation: pulseGlow 2.2s infinite;
+    }
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9995;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- Kanvas Konfeti & Bintang -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Penunjuk Tangan Maya (Virtual Hand Cursor) -->
+  <div id="virtual-cursor" aria-hidden="true">
+    <div class="cursor-ring">
+      <span id="cursor-label" class="text-[11px] font-extrabold uppercase tracking-wider text-white bg-slate-900/90 px-1.5 py-0.5 rounded">TANGAN</span>
+    </div>
+  </div>
+
+  <!-- BAR ATAS (HUD UTAMA UNTUK PROJEKTOR KELAS) -->
+  <header class="w-full border-b-2 border-cyan-500/30 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40 px-3 py-2.5 lg:px-6">
+    <div class="w-full max-w-[1800px] mx-auto flex flex-wrap items-center justify-between gap-4">
+      <!-- Tajuk & Slogan -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 flex items-center justify-center shadow-lg border-2 border-amber-200 shrink-0">
+          <!-- Ikon Perisai Detektif -->
+          <svg class="w-7 h-7 text-slate-950" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm-1.06 13.54L7.4 12l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41-5.64 5.66z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-amber-300 to-emerald-300 tracking-wide">
+              MISI PEMBANTERAS BULI
+            </h1>
+            <span class="text-xs sm:text-sm font-bold bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full shadow">
+              SELAMATKAN AMIR!
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-cyan-200 font-semibold">
+            “Berani Bertindak, Hentikan Buli!” • Kelab Pencegahan Jenayah (Tahun 5)
+          </p>
+        </div>
+      </div>
+
+      <!-- Status Kamera & Tangan secara Langsung -->
+      <div class="flex items-center flex-wrap gap-2">
+        <div id="status-camera-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-600 text-xs sm:text-sm font-bold">
+          <span id="status-camera-dot" class="w-3 h-3 rounded-full bg-amber-400"></span>
+          <span id="status-camera-text">Kamera belum diaktifkan</span>
+        </div>
+
+        <div id="status-hand-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-600 text-xs sm:text-sm font-bold">
+          <span id="status-hand-dot" class="w-3 h-3 rounded-full bg-slate-400"></span>
+          <span id="status-hand-text">Tangan tidak dikesan</span>
+        </div>
+
+        <button id="btn-open-cam-test" type="button" class="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          <span>Uji Kamera</span>
+        </button>
+
+        <button id="btn-toggle-sound" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 font-bold text-xs sm:text-sm transition" title="Hidup/Matikan Bunyi">
+          🔊 Bunyi: Hidup
+        </button>
+
+        <button id="btn-open-guide" type="button" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm transition">
+          📋 Panduan Guru
+        </button>
+        <button id="btn-fullscreen-desktop" type="button" class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs sm:text-sm shadow transition">
+          🖥️ Skrin Penuh
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- KANDUNGAN UTAMA -->
+  <main class="flex-1 w-full max-w-[1800px] mx-auto px-6 py-5 flex flex-col justify-center gap-5">
+
+    <!-- ========================================== -->
+    <!-- SKRIN 1: HALAMAN PERMULAAN & TETAPAN KELAS -->
+    <!-- ========================================== -->
+    <section id="screen-start" class="glass-panel rounded-3xl p-5 sm:p-8 flex flex-col gap-6">
+      <div class="grid grid-cols-12 gap-8 items-stretch">
+        
+        <!-- Kiri: Pengenalan Misi & Watak Amir -->
+        <div class="col-span-7 flex flex-col justify-between gap-5">
+          <div class="inline-flex items-center gap-2 self-start px-3.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/50 text-amber-200 text-sm font-bold">
+            🕵️‍♂️ Misi Penyiasatan Detektif Sekolah Rendah
+          </div>
+          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
+            MISI PEMBANTERAS BULI: <span class="text-amber-300">SELAMATKAN AMIR!</span>
+          </h2>
+          <p class="text-base sm:text-lg text-slate-200 leading-relaxed">
+            Amir dan rakan-rakannya sedang menghadapi <strong>10 situasi buli</strong> di sekolah. Sebagai <strong>Skuad Detektif Prihatin Tahun 5</strong>, tugas anda ialah mengenal pasti jenis buli dan memilih tindakan paling selamat untuk membantu Amir!
+          </p>
+
+          <!-- Kotak Watak Utama: Amir -->
+          <div class="bg-slate-900/90 border-2 border-cyan-400/40 rounded-2xl p-4 flex items-center gap-4">
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 flex items-center justify-center shrink-0 border-2 border-white shadow-md animate-float">
+              <svg class="w-16 h-16" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="44" fill="#fde047" />
+                <circle cx="36" cy="44" r="5" fill="#0f172a" />
+                <circle cx="64" cy="44" r="5" fill="#0f172a" />
+                <path d="M35 64 Q50 76 65 64" stroke="#0f172a" stroke-width="5" fill="none" stroke-linecap="round"/>
+                <path d="M22 34 Q50 12 78 34" fill="#1e293b"/>
+              </svg>
+            </div>
+            <div>
+              <div class="text-xs font-extrabold uppercase tracking-wider text-cyan-300">Watak Utama Misi</div>
+              <div class="text-xl font-extrabold text-white">Amir (Murid Tahun 5)</div>
+              <p class="text-sm text-slate-300 mt-0.5">
+                “Kawan-kawan, bantu saya dan rakan-rakan memilih tindakan yang bijak dan selamat. Ingat: <strong>Berani Bertindak, Hentikan Buli!</strong>”
+              </p>
+            </div>
+          </div>
+
+          <!-- 5 Langkah Arahan Kawalan Tangan (Wajib Dipaparkan) -->
+          <div class="bg-indigo-950/80 border-2 border-indigo-400/50 rounded-2xl p-4 sm:p-5">
+            <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+              <h3 class="text-lg sm:text-xl font-extrabold text-amber-300 flex items-center gap-2">
+                ✋ Cara Kawalan Cubit Udara (Kamera Web)
+              </h3>
+              <span class="text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2.5 py-1 rounded-lg">
+                🖱️ Sokongan Tetikus Turut Disediakan
+              </span>
+            </div>
+            <ol class="grid grid-cols-2 gap-3 text-base font-bold text-white">
+              <li class="bg-slate-900/80 px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center gap-2.5">
+                <span class="w-7 h-7 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center font-extrabold shrink-0">1</span>
+                <span>1. Benarkan akses kamera web.</span>
+              </li>
+              <li class="bg-slate-900/80 px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center gap-2.5">
+                <span class="w-7 h-7 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center font-extrabold shrink-0">2</span>
+                <span>2. Letakkan tangan di hadapan kamera.</span>
+              </li>
+              <li class="bg-slate-900/80 px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center gap-2.5">
+                <span class="w-7 h-7 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-extrabold shrink-0">3</span>
+                <span>3. Cubit ibu jari dan jari telunjuk untuk mengambil kad.</span>
+              </li>
+              <li class="bg-slate-900/80 px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center gap-2.5">
+                <span class="w-7 h-7 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-extrabold shrink-0">4</span>
+                <span>4. Gerakkan tangan ke kotak sasaran.</span>
+              </li>
+              <li class="col-span-2 bg-slate-900/80 px-3.5 py-2.5 rounded-xl border border-emerald-500/50 flex items-center gap-2.5">
+                <span class="w-7 h-7 rounded-full bg-emerald-400 text-slate-950 flex items-center justify-center font-extrabold shrink-0">5</span>
+                <span>5. Lepaskan cubitan untuk menghantar jawapan.</span>
+              </li>
+            </ol>
+            <p class="text-xs text-slate-300 mt-3">
+              *Nota Teknikal: Pustaka pengesanan tangan MediaPipe dimuatkan melalui sambungan internet (CDN). Jika tiada internet atau kamera tidak dibenarkan, anda boleh terus menyeret kad menggunakan tetikus atau skrin sentuh.
+            </p>
+          </div>
+        </div>
+
+        <!-- Kanan: Tetapan Mod Kumpulan Kelas & Butang Mula -->
+        <div class="col-span-5 bg-slate-900/95 border-2 border-amber-400/50 rounded-3xl p-6 flex flex-col justify-between gap-5 shadow-2xl">
+          <div class="border-b border-slate-700 pb-3">
+            <h3 class="text-xl sm:text-2xl font-extrabold text-amber-300">
+              🏫 Tetapan Aktiviti Kelas & Kumpulan
+            </h3>
+            <p class="text-sm text-slate-300 mt-1">
+              Sesuai untuk satu komputer riba guru yang disambungkan ke projektor kelas.
+            </p>
+          </div>
+
+          <!-- Pilihan Bilangan Kumpulan -->
+          <div>
+            <label class="block text-sm font-bold text-cyan-200 mb-2">
+              Bilangan Kumpulan Murid:
+            </label>
+            <div class="grid grid-cols-5 gap-2" id="team-count-buttons">
+              <button type="button" data-teams="1" class="team-cnt-btn py-2.5 rounded-xl font-extrabold text-base border-2 border-slate-600 bg-slate-800 text-white hover:border-cyan-400">1 (Kelas)</button>
+              <button type="button" data-teams="2" class="team-cnt-btn py-2.5 rounded-xl font-extrabold text-base border-2 border-slate-600 bg-slate-800 text-white hover:border-cyan-400">2 Kump</button>
+              <button type="button" data-teams="3" class="team-cnt-btn py-2.5 rounded-xl font-extrabold text-base border-2 border-slate-600 bg-slate-800 text-white hover:border-cyan-400">3 Kump</button>
+              <button type="button" data-teams="4" class="team-cnt-btn py-2.5 rounded-xl font-extrabold text-base border-2 border-cyan-400 bg-cyan-500/20 text-cyan-200">4 Kump</button>
+              <button type="button" data-teams="5" class="team-cnt-btn py-2.5 rounded-xl font-extrabold text-base border-2 border-slate-600 bg-slate-800 text-white hover:border-cyan-400">5 Kump</button>
+            </div>
+          </div>
+
+          <!-- Senarai Nama Kumpulan -->
+          <div>
+            <label class="block text-sm font-bold text-cyan-200 mb-2">
+              Nama Kumpulan (Boleh diubah oleh guru):
+            </label>
+            <div id="team-names-container" class="grid grid-cols-2 gap-3"></div>
+          </div>
+
+          <!-- Pilihan Pemasa Pusingan -->
+          <div>
+            <label for="select-timer" class="block text-sm font-bold text-cyan-200 mb-1.5">
+              Pemasa Setiap Kes (Pilihan):
+            </label>
+            <select id="select-timer" class="w-full rounded-xl bg-slate-800 border-2 border-slate-600 px-3.5 py-2.5 text-white font-bold text-base focus:outline-none focus:border-cyan-400">
+              <option value="0">Tiada Had Masa (Bincang Tenang)</option>
+              <option value="45" selected>45 Saat Setiap Kes (Disarankan)</option>
+              <option value="30">30 Saat Setiap Kes (Pantas)</option>
+              <option value="60">60 Saat Setiap Kes</option>
+            </select>
+          </div>
+
+          <!-- Butang Uji Kamera & Mula Misi -->
+          <div class="flex flex-row gap-4 pt-2">
+            <button id="btn-start-cam-check" type="button" class="flex-1 py-3.5 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border-2 border-cyan-400 text-cyan-200 font-extrabold text-base sm:text-lg transition flex items-center justify-center gap-2">
+              📷 Uji Kamera Dahulu
+            </button>
+            <button id="btn-start-mission" type="button" class="flex-1 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-extrabold text-lg sm:text-xl shadow-xl transition transform hover:scale-[1.02] flex items-center justify-center gap-2">
+              🚀 Mula Misi
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SKRIN 2: PAPARAN PERMAINAN UTAMA (10 KES)  -->
+    <!-- ========================================== -->
+    <section id="screen-game" class="hidden flex-col gap-4">
+
+      <!-- BAR KEMAJUAN, SKOR KUMPULAN & LENCANA -->
+      <div class="glass-panel rounded-2xl p-3.5 sm:p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          
+          <!-- Kemajuan Kes -->
+          <div class="flex items-center gap-3">
+            <div class="px-4 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-extrabold text-base sm:text-lg shadow" id="hud-case-counter">
+              Kes 1 daripada 10
+            </div>
+            <div class="hidden sm:block w-40 md:w-56 h-3.5 bg-slate-800 rounded-full overflow-hidden border border-slate-600">
+              <div id="hud-progress-bar" class="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-500" style="width: 10%;"></div>
+            </div>
+          </div>
+
+          <!-- Giliran Kumpulan Semasa & Tukar Giliran -->
+          <div class="flex items-center gap-2 bg-indigo-950/90 border-2 border-indigo-400/60 px-3.5 py-1.5 rounded-xl">
+            <span class="text-xs sm:text-sm font-bold text-indigo-200">Giliran Wakil:</span>
+            <span id="hud-active-team" class="text-sm sm:text-base font-extrabold text-amber-300">Kumpulan 1</span>
+            <button id="btn-switch-team" type="button" class="ml-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-extrabold text-white transition" title="Tukar Giliran Kumpulan">
+              🔄 Tukar Giliran
+            </button>
+          </div>
+
+          <!-- Pemasa & Markah Keseluruhan -->
+          <div class="flex items-center gap-3">
+            <div id="hud-timer-box" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 border-2 border-cyan-500/50 text-cyan-200 font-extrabold text-base">
+              <span>⏱️</span>
+              <span id="hud-timer-text">45s</span>
+            </div>
+
+            <div class="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-200 font-extrabold text-base sm:text-lg">
+              <span>⭐ Jumlah Markah:</span>
+              <span id="hud-total-score" class="text-white text-xl">0</span>
+              <span class="text-xs text-emerald-300">/ 100</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bar Papan Markah Kumpulan & Lencana Digital -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-700/80">
+          <!-- Markah Kumpulan -->
+          <div id="hud-teams-scoreboard" class="flex flex-wrap items-center gap-2"></div>
+
+          <!-- Lencana Digital -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Lencana Misi:</span>
+            <div id="badge-1" class="px-2.5 py-1 rounded-lg border text-xs font-extrabold flex items-center gap-1 bg-slate-800/80 border-slate-600 text-slate-400">
+              <span>🔍</span> <span>Detektif Prihatin</span>
+            </div>
+            <div id="badge-2" class="px-2.5 py-1 rounded-lg border text-xs font-extrabold flex items-center gap-1 bg-slate-800/80 border-slate-600 text-slate-400">
+              <span>🛡️</span> <span>Rakan Pembela</span>
+            </div>
+            <div id="badge-3" class="px-2.5 py-1 rounded-lg border text-xs font-extrabold flex items-center gap-1 bg-slate-800/80 border-slate-600 text-slate-400">
+              <span>🏆</span> <span>Wira Anti-Buli</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RUANG UTAMA KES: KIRI (SITUASI + KOTAK SASARAN + KAMERA MINI) & KANAN (4 KAD JAWAPAN) -->
+      <div class="grid grid-cols-12 gap-6 items-stretch">
+
+        <!-- LAJUR KIRI (7 KOLUM): KAD SITUASI AMIR + KOTAK SASARAN -->
+        <div class="col-span-7 flex flex-col gap-5 justify-between">
+          
+          <!-- Kad Situasi Besar -->
+          <div class="glass-panel rounded-3xl p-5 sm:p-6 border-2 border-cyan-400/50 flex flex-col gap-4 relative overflow-hidden">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex items-center gap-3">
+                <!-- Ilustrasi Dinamik Watak Amir -->
+                <div id="amir-avatar-box" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-amber-300 to-orange-400 border-2 border-white shadow-lg flex items-center justify-center shrink-0">
+                  <svg id="amir-face-svg" class="w-14 h-14" viewBox="0 0 100 100">
+                    <!-- Wajah Risau/Sedih semasa kes belum selesai -->
+                    <circle cx="50" cy="50" r="44" fill="#fde047" />
+                    <circle cx="36" cy="46" r="5" fill="#0f172a" />
+                    <circle cx="64" cy="46" r="5" fill="#0f172a" />
+                    <path d="M30 36 L42 40" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M70 36 L58 40" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+                    <path id="amir-mouth-path" d="M36 70 Q50 58 64 70" stroke="#0f172a" stroke-width="5" fill="none" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div>
+                  <span id="case-badge-label" class="inline-block text-xs sm:text-sm font-extrabold uppercase tracking-wider px-3 py-0.5 rounded-full bg-cyan-400/20 text-cyan-200 border border-cyan-400/40">
+                    KES 1 • SIASATAN AMIR
+                  </span>
+                  <h2 id="case-title" class="text-2xl sm:text-3xl font-extrabold text-amber-300 mt-1">
+                    KES 1: EJEKAN TERHADAP AMIR
+                  </h2>
+                </div>
+              </div>
+            </div>
+
+            <!-- Kotak Cerita Situasi -->
+            <div class="bg-slate-900/95 border-l-8 border-amber-400 rounded-2xl p-4 sm:p-5 shadow-inner">
+              <div class="text-xs font-extrabold uppercase tracking-wider text-amber-300 mb-1">
+                📖 Situasi Yang Berlaku:
+              </div>
+              <p id="case-situation" class="text-lg sm:text-xl lg:text-2xl font-bold text-white leading-relaxed">
+                Beberapa orang murid berulang kali mengejek Amir dan mempersendakan nama bapanya. Amir kelihatan sedih dan mula menjauhkan diri daripada mereka.
+              </p>
+            </div>
+
+            <!-- Kotak Soalan -->
+            <div class="bg-indigo-950/90 border-2 border-indigo-400/60 rounded-2xl p-4 flex items-center gap-3">
+              <span class="text-2xl sm:text-3xl">❓</span>
+              <div>
+                <div class="text-xs font-extrabold uppercase tracking-wider text-indigo-300">Soalan Misi:</div>
+                <p id="case-question" class="text-lg sm:text-xl font-extrabold text-amber-200">
+                  Apakah jenis buli yang ditunjukkan dalam situasi ini?
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- KOTAK SASARAN (DROPZONE) + PRATONTON KAMERA MINI -->
+          <div class="grid grid-cols-12 gap-5 items-stretch">
+            
+            <!-- Kotak Sasaran Jawapan -->
+            <div id="dropzone" class="col-span-8 dropzone-box rounded-3xl border-4 border-dashed border-cyan-400 p-5 flex flex-col items-center justify-center text-center min-h-[170px] relative">
+              <div id="dropzone-empty-state" class="flex flex-col items-center gap-2">
+                <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 border-2 border-cyan-300 flex items-center justify-center text-2xl">
+                  🎯
+                </div>
+                <div class="text-lg sm:text-xl font-extrabold text-cyan-200">
+                  KOTAK SASARAN JAWAPAN
+                </div>
+                <p class="text-xs sm:text-sm font-semibold text-slate-300 max-w-md">
+                  Cubit (👌) kad jawapan di sebelah kanan dan lepaskan di dalam kotak ini! (Atau seret/klik menggunakan tetikus)
+                </p>
+              </div>
+
+              <!-- Paparan Apabila Jawapan Telah Dihantar -->
+              <div id="dropzone-filled-state" class="hidden w-full flex-col items-center gap-2">
+                <div id="dropped-card-badge" class="px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-cyan-400 text-slate-950">
+                  Jawapan Dihantar
+                </div>
+                <div id="dropped-card-text" class="text-lg sm:text-xl font-extrabold text-white"></div>
+              </div>
+            </div>
+
+            <!-- Panel Kamera Web Langsung (HUD Tangan) -->
+            <div class="col-span-4 glass-panel rounded-3xl p-3.5 flex flex-col items-center justify-between border-2 border-slate-700">
+              <div class="w-full flex items-center justify-between text-xs font-bold text-cyan-200 mb-1 px-1">
+                <span>📹 Kamera Tangan</span>
+                <span id="pinch-live-badge" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300">Sedia</span>
+              </div>
+              <div class="relative w-full aspect-video sm:aspect-[4/3] bg-slate-950 rounded-2xl overflow-hidden border-2 border-cyan-500/40 flex items-center justify-center">
+                <video id="webcam-video" class="hidden" playsinline muted></video>
+                <canvas id="webcam-canvas" class="w-full h-full object-cover"></canvas>
+                <div id="webcam-overlay-msg" class="absolute inset-0 flex flex-col items-center justify-center p-2 text-center bg-slate-950/85">
+                  <p class="text-xs font-bold text-slate-300 mb-2">Kamera belum aktif. Anda boleh guna tetikus atau aktifkan kamera.</p>
+                  <button id="btn-enable-cam-inline" type="button" class="px-3 py-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold text-xs shadow">
+                    Hidupkan Kamera
+                  </button>
+                </div>
+              </div>
+              <div class="text-[11px] text-slate-300 font-semibold text-center mt-1">
+                Rapatkan ibu jari & telunjuk (👌) untuk mencubit kad.
+              </div>
+            </div>
+
+          </div>
+
+          <!-- KOTAK MAKLUM BALAS SELEPAS JAWAPAN DIHANTAR -->
+          <div id="feedback-panel" class="hidden rounded-3xl p-5 border-2 shadow-2xl transition-all">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div class="flex items-start gap-3.5">
+                <div id="feedback-icon" class="text-3xl sm:text-4xl shrink-0">🌟</div>
+                <div>
+                  <h3 id="feedback-title" class="text-xl sm:text-2xl font-extrabold text-white">
+                    Jawapan Tepat! +10 Mata
+                  </h3>
+                  <p id="feedback-message" class="text-base sm:text-lg font-bold text-slate-100 mt-1"></p>
+                  <p id="feedback-explanation" class="text-sm sm:text-base text-cyan-200 font-semibold mt-1"></p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
+                <button id="btn-next-case" type="button" class="px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-base sm:text-lg shadow-lg transition transform hover:scale-105 flex items-center gap-2">
+                  <span>Kes Seterusnya</span>
+                  <span>➡️</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- LAJUR KANAN (5 KOLUM): 4 PILIHAN JAWAPAN (BOLEH DICUBIT / DISERET) -->
+        <div class="col-span-5 glass-panel rounded-3xl p-6 flex flex-col justify-between gap-4">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg sm:text-xl font-extrabold text-cyan-300 flex items-center gap-2">
+                🃏 Pilihan Kad Jawapan
+              </h3>
+              <span class="text-xs font-bold text-slate-300 bg-slate-800 px-2.5 py-1 rounded-lg">
+                Cubit & Seret ke Kotak Sasaran
+              </span>
+            </div>
+
+            <!-- Senarai 4 Kad Jawapan -->
+            <div id="options-container" class="flex flex-col gap-3"></div>
+          </div>
+
+          <!-- Bar Kawalan Bawah (Main Semula & Tamat Misi) -->
+          <div class="pt-3 border-t border-slate-700/80 flex flex-wrap items-center justify-between gap-2">
+            <button id="btn-restart-mission" type="button" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-bold text-xs sm:text-sm transition">
+              🔁 Main Semula
+            </button>
+            <button id="btn-end-mission-early" type="button" class="px-4 py-2 rounded-xl bg-rose-600/80 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm transition">
+              🏁 Tamat Misi
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SKRIN 3: SKRIN PENUTUP & REFLEKSI MURID    -->
+    <!-- ========================================== -->
+    <section id="screen-end" class="hidden glass-panel rounded-3xl p-6 sm:p-8 flex-col gap-6 border-2 border-amber-400">
+      
+      <!-- Banner Tahniah -->
+      <div class="text-center max-w-3xl mx-auto flex flex-col items-center gap-3">
+        <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-300 via-yellow-400 to-orange-500 flex items-center justify-center text-5xl shadow-2xl border-4 border-white animate-float">
+          🏆
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-extrabold text-amber-300 tracking-wide">
+          TAHNIAH, PEMBELA RAKAN!
+        </h2>
+        <p class="text-lg sm:text-2xl font-bold text-white">
+          Anda telah membantu Amir menyelesaikan semua kes buli.
+        </p>
+      </div>
+
+      <!-- Kad Ringkasan Skor & Lencana -->
+      <div class="grid grid-cols-3 gap-6">
+        <div class="bg-slate-900/90 border-2 border-emerald-400/60 rounded-2xl p-5 text-center">
+          <div class="text-sm font-bold text-emerald-300 uppercase">Jumlah Markah Keseluruhan</div>
+          <div id="end-total-score" class="text-4xl sm:text-5xl font-extrabold text-white mt-2">100 / 100</div>
+          <div id="end-appreciation-msg" class="text-sm font-semibold text-slate-300 mt-2"></div>
+        </div>
+
+        <div class="bg-slate-900/90 border-2 border-cyan-400/60 rounded-2xl p-5 text-center">
+          <div class="text-sm font-bold text-cyan-300 uppercase">Kes Dijawab Dengan Betul</div>
+          <div id="end-correct-count" class="text-4xl sm:text-5xl font-extrabold text-white mt-2">10 / 10 Kes</div>
+          <div class="text-sm font-semibold text-slate-300 mt-2">Amir kini kembali ceria dan selamat di sekolah!</div>
+        </div>
+
+        <div class="bg-slate-900/90 border-2 border-amber-400/60 rounded-2xl p-5 text-center">
+          <div class="text-sm font-bold text-amber-300 uppercase">Lencana Yang Diperoleh</div>
+          <div id="end-badges-list" class="flex flex-wrap items-center justify-center gap-2 mt-3"></div>
+        </div>
+      </div>
+
+      <!-- Papan Markah Akhir Mengikut Kumpulan -->
+      <div class="bg-slate-900/85 border border-slate-700 rounded-2xl p-4 sm:p-5">
+        <h3 class="text-lg font-extrabold text-cyan-300 mb-3">📊 Keputusan Markah Kumpulan:</h3>
+        <div id="end-teams-summary" class="grid grid-cols-4 gap-4"></div>
+      </div>
+
+      <!-- Slogan Besar -->
+      <div class="bg-gradient-to-r from-indigo-900/90 via-sky-900/90 to-emerald-900/90 border-2 border-amber-300 rounded-3xl p-6 text-center shadow-xl">
+        <div class="text-2xl sm:text-4xl font-extrabold text-amber-300 tracking-wide">
+          “JANGAN MEMBULI, JANGAN BERDIAM DIRI!”
+        </div>
+        <div class="text-xl sm:text-2xl font-extrabold text-white mt-2">
+          “Berani Bertindak, Hentikan Buli!”
+        </div>
+      </div>
+
+      <!-- Soalan Refleksi Interaktif untuk Perbincangan Kelas -->
+      <div class="bg-slate-900/95 border-2 border-cyan-400/50 rounded-2xl p-5 flex flex-col gap-4">
+        <div class="flex items-start gap-3">
+          <span class="text-3xl">💬</span>
+          <div>
+            <div class="text-xs font-extrabold uppercase tracking-wider text-cyan-300">Soalan Refleksi Kelas:</div>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">
+              “Jika anda melihat rakan dibuli, apakah satu tindakan selamat yang boleh anda lakukan?”
+            </h3>
+          </div>
+        </div>
+
+        <!-- Input Jawapan Refleksi Murid untuk Dipaparkan di Projektor -->
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input id="reflection-input" type="text" placeholder="Taip jawapan refleksi murid di sini untuk dipaparkan di skrin kelas..." class="flex-1 rounded-xl bg-slate-800 border-2 border-slate-600 px-4 py-3 text-white font-semibold focus:outline-none focus:border-cyan-400" />
+          <button id="btn-add-reflection" type="button" class="px-5 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold transition">
+            + Papar Idea Murid
+          </button>
+        </div>
+        <div id="reflection-ideas-list" class="flex flex-wrap gap-2">
+          <span class="px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 font-bold text-sm">
+            💡 Contoh: Melaporkan kejadian dengan segera kepada guru bertugas atau kaunselor.
+          </span>
+          <span class="px-3.5 py-2 rounded-xl bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 font-bold text-sm">
+            💡 Contoh: Menemani rakan yang sedih dan mengajaknya ke tempat selamat.
+          </span>
+        </div>
+      </div>
+
+      <!-- Butang Main Semula -->
+      <div class="flex justify-center pt-2">
+        <button id="btn-play-again-end" type="button" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-slate-950 font-extrabold text-xl shadow-xl transition transform hover:scale-105">
+          🔁 Main Semula Misi
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL 1: UJI KAMERA & PENGESANAN TANGAN    -->
+  <!-- ========================================== -->
+  <div id="modal-cam-test" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-panel rounded-3xl max-w-2xl w-full p-5 sm:p-6 border-2 border-cyan-400 flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <h3 class="text-xl sm:text-2xl font-extrabold text-cyan-300">
+          📷 Uji Kamera Web & Kawalan Cubit Udara
+        </h3>
+        <button id="btn-close-cam-modal" type="button" class="px-3 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm">
+          ✕ Tutup
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+        <div class="sm:col-span-7 relative aspect-video bg-slate-950 rounded-2xl overflow-hidden border-2 border-cyan-400 flex items-center justify-center">
+          <canvas id="test-webcam-canvas" class="w-full h-full object-cover"></canvas>
+          <div id="test-cam-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-slate-950/90">
+            <p class="text-sm font-bold text-slate-200 mb-3">Klik butang di bawah untuk membenarkan akses kamera web komputer riba.</p>
+            <button id="btn-activate-cam-now" type="button" class="px-5 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold text-sm shadow-lg">
+              🎥 Aktifkan Kamera Sekarang
+            </button>
+          </div>
+        </div>
+
+        <div class="sm:col-span-5 flex flex-col gap-2.5 text-sm">
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-700">
+            <div class="text-xs text-slate-400 font-bold uppercase">Status Kamera:</div>
+            <div id="modal-cam-status" class="font-extrabold text-amber-300 text-base mt-0.5">Belum diaktifkan</div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-700">
+            <div class="text-xs text-slate-400 font-bold uppercase">Status Tangan:</div>
+            <div id="modal-hand-status" class="font-extrabold text-slate-300 text-base mt-0.5">Tangan tidak dikesan</div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-700">
+            <div class="text-xs text-slate-400 font-bold uppercase">Status Cubitan (Pinch):</div>
+            <div id="modal-pinch-status" class="font-extrabold text-cyan-300 text-base mt-0.5">Terbuka (Belum mencubit)</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="cam-error-box" class="hidden p-3.5 rounded-xl bg-rose-950/90 border border-rose-400 text-rose-200 text-xs sm:text-sm font-semibold"></div>
+
+      <div class="flex justify-end gap-3 pt-2 border-t border-slate-700">
+        <button id="btn-done-cam-modal" type="button" class="px-5 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-extrabold text-sm">
+          ✅ Selesai & Kembali ke Permainan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL 2: PANDUAN GURU & CARA JALANKAN FAIL -->
+  <!-- ========================================== -->
+  <div id="modal-guide" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+    <div class="glass-panel rounded-3xl max-w-2xl w-full p-5 sm:p-6 border-2 border-indigo-400 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <h3 class="text-xl sm:text-2xl font-extrabold text-amber-300">
+          📋 Panduan Guru & Arahan Menjalankan Fail
+        </h3>
+        <button id="btn-close-guide" type="button" class="px-3 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm">
+          ✕ Tutup
+        </button>
+      </div>
+
+      <div class="space-y-3 text-sm text-slate-200 leading-relaxed">
+        <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-700">
+          <h4 class="font-extrabold text-cyan-300 text-base mb-1">1. Cara Menyimpan & Menjalankan Fail (index.html)</h4>
+          <ol class="list-decimal list-inside space-y-1">
+            <li>Simpan kod permainan ini sebagai satu fail bernama <strong>index.html</strong> di komputer riba anda.</li>
+            <li>Pastikan komputer riba mempunyai <strong>sambungan internet</strong> supaya pustaka pengesanan tangan <em>MediaPipe Hands</em> dan fon dapat dimuatkan daripada CDN.</li>
+            <li>Buka fail <strong>index.html</strong> menggunakan pelayar web moden seperti <strong>Google Chrome</strong> atau <strong>Microsoft Edge</strong>.</li>
+            <li>Untuk kamera web berfungsi tanpa sekatan keselamatan pelayar, jalankan terus dari pratonton ini, melalui pelayan tempatan (contohnya <em>VS Code Live Server</em> / <code>python3 -m http.server</code>), atau buka terus di Chrome dan klik <strong>“Allow / Benarkan”</strong> apabila diminta akses kamera.</li>
+          </ol>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-700">
+          <h4 class="font-extrabold text-amber-300 text-base mb-1">2. Cadangan Pelaksanaan Aktiviti Kelas (Projektor)</h4>
+          <ul class="list-disc list-inside space-y-1">
+            <li>Bahagikan murid Tahun 5 kepada beberapa kumpulan (2 hingga 5 kumpulan).</li>
+            <li>Bagi setiap kes, beri masa kepada ahli kumpulan untuk berbincang sebelum seorang wakil tampil ke hadapan komputer riba guru.</li>
+            <li>Wakil kumpulan menggunakan gerakan tangan <strong>cubit udara (ibu jari + jari telunjuk)</strong> untuk mengambil kad jawapan dan melepaskannya di dalam Kotak Sasaran.</li>
+            <li>Jika pencahayaan bilik darjah terlalu gelap atau kamera tidak dapat digunakan, wakil murid boleh terus menyeret atau mengklik kad jawapan menggunakan <strong>tetikus (mouse)</strong>.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-700">
+        <button id="btn-ok-guide" type="button" class="px-5 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold text-sm">
+          Faham, Tutup Panduan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. BANK SITUASI PERMAINAN (10 KES RASMI KELAB PENCEGAHAN JENAYAH TAHUN 5)
+    // =========================================================================
+    const CASES_DATA = [
+      {
+        id: 1,
+        title: "KES 1: EJEKAN TERHADAP AMIR",
+        situation: "Beberapa orang murid berulang kali mengejek Amir dan mempersendakan nama bapanya. Amir kelihatan sedih dan mula menjauhkan diri daripada mereka.",
+        question: "Apakah jenis buli yang ditunjukkan dalam situasi ini?",
+        options: [
+          { key: "A", text: "A. Buli lisan" },
+          { key: "B", text: "B. Buli fizikal" },
+          { key: "C", text: "C. Buli siber" },
+          { key: "D", text: "D. Buli sosial" }
+        ],
+        correctKey: "A",
+        feedback: "“Tepat! Mengejek, menghina dan menggunakan kata-kata yang menyakitkan hati merupakan contoh buli lisan.”",
+        explanation: "Sebab jawapan betul: Buli lisan berlaku apabila seseorang menggunakan perkataan, panggilan buruk, atau ejekan berulang kali untuk menyakitkan perasaan orang lain."
+      },
+      {
+        id: 2,
+        title: "KES 2: KASUT AMIR DISEMBUNYIKAN",
+        situation: "Beberapa orang murid sengaja menyembunyikan kasut Amir berulang kali supaya Amir sukar mencari kasutnya dan berasa tertekan.",
+        question: "Apakah tindakan yang paling sesuai dilakukan oleh Amir?",
+        options: [
+          { key: "A", text: "A. Membalas dengan menyembunyikan kasut mereka." },
+          { key: "B", text: "B. Berdiam diri dan menerima perbuatan itu." },
+          { key: "C", text: "C. Meminta bantuan guru dan melaporkan kejadian tersebut." },
+          { key: "D", text: "D. Menyebarkan gambar mereka di media sosial." }
+        ],
+        correctKey: "C",
+        feedback: "“Betul! Amir perlu mendapatkan bantuan orang dewasa yang dipercayai. Membalas dendam boleh memburukkan keadaan.”",
+        explanation: "Sebab jawapan betul: Melaporkan kejadian kepada guru membantu menyelesaikan masalah secara selamat dan menghentikan perbuatan buli daripada berulang."
+      },
+      {
+        id: 3,
+        title: "KES 3: MELOMPAT DAN MENOLAK",
+        situation: "Seorang murid berulang kali menolak Amir dengan sengaja ketika waktu rehat sehingga Amir hampir terjatuh.",
+        question: "Apakah jenis buli yang ditunjukkan?",
+        options: [
+          { key: "A", text: "A. Buli lisan" },
+          { key: "B", text: "B. Buli fizikal" },
+          { key: "C", text: "C. Buli siber" },
+          { key: "D", text: "D. Buli sosial" }
+        ],
+        correctKey: "B",
+        feedback: "“Tepat! Menolak, memukul dan mencederakan orang lain dengan sengaja merupakan contoh buli fizikal.”",
+        explanation: "Sebab jawapan betul: Buli fizikal melibatkan perbuatan menyakiti tubuh badan seseorang seperti menolak, menendang, mencubit, atau memukul."
+      },
+      {
+        id: 4,
+        title: "KES 4: AMIR DIPULAUKAN",
+        situation: "Sekumpulan murid sengaja mengajak rakan-rakan lain supaya tidak bercakap dengan Amir dan tidak membenarkannya menyertai kumpulan mereka berulang kali.",
+        question: "Apakah jenis buli yang paling sesuai dengan situasi ini?",
+        options: [
+          { key: "A", text: "A. Buli sosial" },
+          { key: "B", text: "B. Buli fizikal" },
+          { key: "C", text: "C. Buli siber" },
+          { key: "D", text: "D. Buli lisan" }
+        ],
+        correctKey: "A",
+        feedback: "“Betul! Sengaja memulaukan atau mengasingkan seseorang daripada kumpulan boleh menjadi buli sosial.”",
+        explanation: "Sebab jawapan betul: Buli sosial atau hubungan berlaku apabila seseorang disisihkan, dipulaukan dengan sengaja, atau dihasut supaya tiada rakan mahu berkawan dengannya."
+      },
+      {
+        id: 5,
+        title: "KES 5: GAMBAR AMIR DISEBARKAN",
+        situation: "Seorang murid mengambil gambar Amir tanpa kebenaran, menambah perkataan yang memalukan dan menyebarkannya dalam kumpulan sembang untuk mengejek Amir.",
+        question: "Apakah jenis buli yang berlaku?",
+        options: [
+          { key: "A", text: "A. Buli fizikal" },
+          { key: "B", text: "B. Buli sosial" },
+          { key: "C", text: "C. Buli siber" },
+          { key: "D", text: "D. Buli lisan sahaja" }
+        ],
+        correctKey: "C",
+        feedback: "“Tepat! Menggunakan internet atau aplikasi digital untuk memalukan dan menyakiti orang lain boleh menjadi buli siber.”",
+        explanation: "Sebab jawapan betul: Buli siber dilakukan melalui peranti elektronik, aplikasi sembang, atau media sosial untuk menghina, mengugut, atau memalukan mangsa."
+      },
+      {
+        id: 6,
+        title: "KES 6: AMIR MELIHAT RAKANNYA DIEJEK",
+        situation: "Amir melihat seorang murid mengejek rakannya berulang kali. Beberapa orang murid lain ketawa, tetapi tiada sesiapa membantu mangsa.",
+        question: "Apakah tindakan paling selamat yang boleh dilakukan oleh Amir?",
+        options: [
+          { key: "A", text: "A. Ketawa bersama-sama." },
+          { key: "B", text: "B. Menyertai ejekan itu supaya dirinya tidak menjadi sasaran." },
+          { key: "C", text: "C. Menyokong rakannya dan melaporkan kejadian kepada guru." },
+          { key: "D", text: "D. Merakam kejadian untuk disebarkan." }
+        ],
+        correctKey: "C",
+        feedback: "“Bagus! Kita boleh membantu mangsa dengan memberikan sokongan dan mendapatkan bantuan guru tanpa membahayakan diri sendiri.”",
+        explanation: "Sebab jawapan betul: Sebagai rakan yang prihatin, kita tidak patut ketawa bersama pembuli; sebaliknya kita menenangkan mangsa dan memaklumkan kepada guru."
+      },
+      {
+        id: 7,
+        title: "KES 7: BARANG AMIR DICURI",
+        situation: "Seorang murid berulang kali mengambil barang milik Amir tanpa izin, menyembunyikannya dan enggan memulangkannya apabila diminta.",
+        question: "Apakah tindakan terbaik yang patut diambil oleh Amir?",
+        options: [
+          { key: "A", text: "A. Mengambil barang milik murid itu sebagai balasan." },
+          { key: "B", text: "B. Mengugut murid tersebut." },
+          { key: "C", text: "C. Memaklumkan perkara itu kepada guru dan meminta bantuan." },
+          { key: "D", text: "D. Menyembunyikan semua barangnya tanpa memberitahu sesiapa." }
+        ],
+        correctKey: "C",
+        feedback: "“Tepat! Mengambil atau menyembunyikan barang orang lain dengan sengaja ialah perbuatan yang tidak boleh diterima. Amir perlu mendapatkan bantuan guru.”",
+        explanation: "Sebab jawapan betul: Guru mempunyai kuasa dan cara yang betul untuk menyiasat serta memastikan barang Amir dipulangkan dengan adil tanpa pergaduhan."
+      },
+      {
+        id: 8,
+        title: "KES 8: AMIR TAKUT UNTUK KE SEKOLAH",
+        situation: "Amir berasa takut untuk ke sekolah kerana beberapa orang murid sering mengganggu dan menghinanya. Dia mula kelihatan murung dan tidak mahu menyertai aktiviti kelas.",
+        question: "Apakah tindakan yang paling membantu Amir?",
+        options: [
+          { key: "A", text: "A. Menyuruh Amir supaya mengabaikan semuanya tanpa bantuan." },
+          { key: "B", text: "B. Mendengar luahan Amir, memberikan sokongan dan membantunya mendapatkan bantuan guru." },
+          { key: "C", text: "C. Menyalahkan Amir kerana tidak mempertahankan diri." },
+          { key: "D", text: "D. Memaksa Amir menyelesaikan masalah itu seorang diri." }
+        ],
+        correctKey: "B",
+        feedback: "“Betul! Kita perlu mendengar, menyokong dan membantu mangsa mendapatkan pertolongan daripada orang dewasa yang dipercayai.”",
+        explanation: "Sebab jawapan betul: Mangsa buli memerlukan sokongan emosi daripada rakan dan tindakan perlindungan daripada guru atau ibu bapa supaya kembali rasa selamat."
+      },
+      {
+        id: 9,
+        title: "KES 9: AMIR DIAJAK MEMBALAS DENDAM",
+        situation: "Selepas diejek, seorang rakan mengajak Amir membalas dengan memukul murid yang mengejeknya.",
+        question: "Apakah keputusan yang paling bijak?",
+        options: [
+          { key: "A", text: "A. Bersetuju untuk membalas dendam." },
+          { key: "B", text: "B. Mengajak lebih ramai rakan untuk menyerang." },
+          { key: "C", text: "C. Menolak ajakan itu dan mendapatkan bantuan guru." },
+          { key: "D", text: "D. Mengugut murid tersebut selepas sekolah." }
+        ],
+        correctKey: "C",
+        feedback: "“Tepat! Membalas dengan kekerasan boleh mencetuskan pergaduhan. Pilih tindakan yang selamat dan dapatkan bantuan.”",
+        explanation: "Sebab jawapan betul: Membalas keganasan dengan keganasan akan menyebabkan kedua-dua pihak cedera dan dikenakan tindakan disiplin. Gunakan saluran laporan rasmi."
+      },
+      {
+        id: 10,
+        title: "KES 10: MISI TERAKHIR - JADI PEMBELA RAKAN",
+        situation: "Amir melihat seorang murid baharu diejek dan ditinggalkan bersendirian. Amir mahu membantu tetapi bimbang dirinya turut diejek.",
+        question: "Apakah tindakan terbaik yang boleh dilakukan oleh Amir?",
+        options: [
+          { key: "A", text: "A. Berpura-pura tidak melihat kejadian itu." },
+          { key: "B", text: "B. Menyertai murid lain yang mengejek." },
+          { key: "C", text: "C. Menghampiri murid itu jika selamat, memberikan sokongan dan melaporkan kejadian kepada guru." },
+          { key: "D", text: "D. Menyebarkan cerita tentang kejadian itu kepada semua orang." }
+        ],
+        correctKey: "C",
+        feedback: "“Syabas! Kita boleh menjadi pembela rakan dengan menunjukkan kebaikan, memberikan sokongan dan melaporkan buli melalui cara yang selamat.”",
+        explanation: "Sebab jawapan betul: Seorang Pembela Rakan (Upstander) memastikan keselamatan diri terlebih dahulu, memberi kata semangat kepada mangsa, dan mendapatkan bantuan guru."
+      }
+    ];
+
+    // =========================================================================
+    // 2. PEMBOLEH UBAH KEADAAN PERMAINAN (STATE)
+    // =========================================================================
+    let currentCaseIndex = 0;
+    let totalScore = 0;
+    let correctCasesCount = 0;
+    let caseLocked = false;
+    let timerSecondsSetting = 45;
+    let remainingSeconds = 45;
+    let timerInterval = null;
+
+    // Mod Kumpulan
+    let teamCount = 4;
+    let teams = [
+      { name: "Kumpulan 1 (Wira)", score: 0 },
+      { name: "Kumpulan 2 (Perisai)", score: 0 },
+      { name: "Kumpulan 3 (Sahabat)", score: 0 },
+      { name: "Kumpulan 4 (Bijak)", score: 0 }
+    ];
+    let activeTeamIndex = 0;
+
+    // Audio Synthesizer
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+
+        if (type === 'grab') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(420, now);
+          osc.frequency.exponentialRampToValueAtTime(680, now + 0.09);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } else if (type === 'correct') {
+          const notes = [523.25, 659.25, 783.99, 1046.5];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+            gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.25);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.26);
+          });
+        } else if (type === 'wrong') {
+          const notes = [330, 277.18];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+            gain.gain.setValueAtTime(0.16, now + idx * 0.14);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.14 + 0.22);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.14);
+            osc.stop(now + idx * 0.14 + 0.24);
+          });
+        } else if (type === 'fanfare') {
+          const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.11);
+            gain.gain.setValueAtTime(0.22, now + idx * 0.11);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.11 + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.11);
+            osc.stop(now + idx * 0.11 + 0.32);
+          });
+        }
+      } catch (e) {
+        // Abaikan ralat audio jika pelayar menyekat
+      }
+    }
+
+    // =========================================================================
+    // 3. SISTEM KONFETI & BINTANG (ANIMASI GANJARAN)
+    // =========================================================================
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    const confettiCtx = confettiCanvas.getContext('2d');
+    let confettiParticles = [];
+    let confettiAnimId = null;
+
+    function resizeConfettiCanvas() {
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeConfettiCanvas);
+    resizeConfettiCanvas();
+
+    function launchConfetti() {
+      resizeConfettiCanvas();
+      const colors = ['#facc15', '#38bdf8', '#34d399', '#fb7185', '#a78bfa'];
+      for (let i = 0; i < 80; i++) {
+        confettiParticles.push({
+          x: window.innerWidth * 0.5 + (Math.random() - 0.5) * 260,
+          y: window.innerHeight * 0.45,
+          vx: (Math.random() - 0.5) * 14,
+          vy: -Math.random() * 14 - 4,
+          size: Math.random() * 9 + 6,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vr: (Math.random() - 0.5) * 12,
+          alpha: 1
+        });
+      }
+      if (!confettiAnimId) {
+        animateConfetti();
+      }
+    }
+
+    function animateConfetti() {
+      confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      confettiParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.38;
+        p.rotation += p.vr;
+        p.alpha -= 0.012;
+
+        confettiCtx.save();
+        confettiCtx.globalAlpha = Math.max(0, p.alpha);
+        confettiCtx.translate(p.x, p.y);
+        confettiCtx.rotate((p.rotation * Math.PI) / 180);
+        confettiCtx.fillStyle = p.color;
+        confettiCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.65);
+        confettiCtx.restore();
+      });
+      confettiParticles = confettiParticles.filter(p => p.alpha > 0 && p.y < confettiCanvas.height + 40);
+      if (confettiParticles.length > 0) {
+        confettiAnimId = requestAnimationFrame(animateConfetti);
+      } else {
+        confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        confettiAnimId = null;
+      }
+    }
+
+    // =========================================================================
+    // 4. TETAPAN KUMPULAN PADA SKRIN PERMULAAN
+    // =========================================================================
+    const defaultTeamNames = [
+      "Kumpulan 1 (Wira)",
+      "Kumpulan 2 (Perisai)",
+      "Kumpulan 3 (Sahabat)",
+      "Kumpulan 4 (Bijak)",
+      "Kumpulan 5 (Berani)"
+    ];
+
+    function renderTeamInputs() {
+      const container = document.getElementById('team-names-container');
+      container.innerHTML = '';
+      for (let i = 0; i < teamCount; i++) {
+        if (!teams[i]) {
+          teams[i] = { name: defaultTeamNames[i] || `Kumpulan ${i + 1}`, score: 0 };
+        }
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = teams[i].name;
+        input.className = 'w-full rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-white font-bold text-sm focus:outline-none focus:border-cyan-400';
+        input.addEventListener('input', (e) => {
+          teams[i].name = e.target.value.trim() || `Kumpulan ${i + 1}`;
+        });
+        container.appendChild(input);
+      }
+      teams.length = teamCount;
+    }
+
+    document.querySelectorAll('.team-cnt-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        teamCount = parseInt(btn.getAttribute('data-teams'), 10);
+        document.querySelectorAll('.team-cnt-btn').forEach(b => {
+          b.className = 'team-cnt-btn py-2.5 rounded-xl font-extrabold text-base border-2 border-slate-600 bg-slate-800 text-white hover:border-cyan-400';
+        });
+        btn.className = 'team-cnt-btn py-2.5 rounded-xl font-extrabold text-base border-2 border-cyan-400 bg-cyan-500/20 text-cyan-200';
+        renderTeamInputs();
+      });
+    });
+    renderTeamInputs();
+
+    // =========================================================================
+    // 5. LOGIK PERMAINAN UTAMA, SKOR, LENCANA & PEMASA
+    // =========================================================================
+    function updateHUD() {
+      document.getElementById('hud-case-counter').textContent = `Kes ${currentCaseIndex + 1} daripada ${CASES_DATA.length}`;
+      const progressPct = ((currentCaseIndex + 1) / CASES_DATA.length) * 100;
+      document.getElementById('hud-progress-bar').style.width = `${progressPct}%`;
+      document.getElementById('hud-total-score').textContent = totalScore;
+
+      // Giliran Kumpulan
+      if (teams.length > 0) {
+        activeTeamIndex = activeTeamIndex % teams.length;
+        document.getElementById('hud-active-team').textContent = teams[activeTeamIndex].name;
+      }
+
+      // Papan Markah Kumpulan
+      const board = document.getElementById('hud-teams-scoreboard');
+      board.innerHTML = '';
+      teams.forEach((t, idx) => {
+        const pill = document.createElement('div');
+        const isCurrent = idx === activeTeamIndex;
+        pill.className = isCurrent
+          ? 'px-3 py-1 rounded-xl bg-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5'
+          : 'px-3 py-1 rounded-xl bg-slate-800/90 border border-slate-600 text-slate-200 font-bold text-xs sm:text-sm flex items-center gap-1.5';
+        pill.innerHTML = `<span>${t.name}:</span> <span class="font-extrabold">${t.score} mata</span>`;
+        board.appendChild(pill);
+      });
+
+      // Kemas kini Lencana Digital
+      const b1 = document.getElementById('badge-1');
+      const b2 = document.getElementById('badge-2');
+      const b3 = document.getElementById('badge-3');
+
+      const completedCases = currentCaseIndex + (caseLocked ? 1 : 0);
+      if (completedCases >= 3) {
+        b1.className = 'px-2.5 py-1 rounded-lg border text-xs font-extrabold flex items-center gap-1 bg-cyan-500/25 border-cyan-300 text-cyan-200 pulse-badge';
+      } else {
+        b1.className = 'px-2.5 py-1 rounded-lg border text-xs font-extrabold flex items-center gap-1 bg-slate-800/80 border-slate-600 text-slate-400';
+      }
+
+      if (completedCases >= 6) {
+        b2.className = 'px-2.5 py-1 rounded-lg border text-xs font-extrabold flex items-center gap-1 bg-amber-500/25 border-amber-300 text-amber-200 pulse-badge';
+      } else {
+        b2.className = 'px-2.5 py-1 rounded-lg border text-xs font-extrabold flex items-center gap-1 bg-slate-800/80 border-slate-600 text-slate-400';
+      }
+
+      if (completedCases >= 10) {
+        b3.className = 'px-2.5 py-1 rounded-lg border text-xs font-extrabold flex items-center gap-1 bg-emerald-500/25 border-emerald-300 text-emerald-200 pulse-badge';
+      } else {
+        b3.className = 'px-2.5 py-1 rounded-lg border text-xs font-extrabold flex items-center gap-1 bg-slate-800/80 border-slate-600 text-slate-400';
+      }
+    }
+
+    function setAmirExpression(mood) {
+      const mouth = document.getElementById('amir-mouth-path');
+      const box = document.getElementById('amir-avatar-box');
+      if (!mouth || !box) return;
+      if (mood === 'happy') {
+        mouth.setAttribute('d', 'M34 62 Q50 78 66 62');
+        box.className = 'w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-emerald-400 to-teal-500 border-2 border-white shadow-lg flex items-center justify-center shrink-0 animate-float';
+      } else {
+        mouth.setAttribute('d', 'M36 70 Q50 58 64 70');
+        box.className = 'w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-amber-300 to-orange-400 border-2 border-white shadow-lg flex items-center justify-center shrink-0';
+      }
+    }
+
+    function startCaseTimer() {
+      clearInterval(timerInterval);
+      const timerBox = document.getElementById('hud-timer-box');
+      const timerText = document.getElementById('hud-timer-text');
+
+      if (timerSecondsSetting <= 0) {
+        timerBox.classList.add('hidden');
+        return;
+      }
+      timerBox.classList.remove('hidden');
+      remainingSeconds = timerSecondsSetting;
+      timerText.textContent = `${remainingSeconds}s`;
+
+      timerInterval = setInterval(() => {
+        if (caseLocked) {
+          clearInterval(timerInterval);
+          return;
+        }
+        remainingSeconds--;
+        if (remainingSeconds <= 0) {
+          remainingSeconds = 0;
+          timerText.textContent = `Masa Tamat (Boleh terus jawab)`;
+          clearInterval(timerInterval);
+        } else {
+          timerText.textContent = `${remainingSeconds}s`;
+        }
+      }, 1000);
+    }
+
+    function renderCurrentCase() {
+      releaseAnyGrabbedCard(true);
+      caseLocked = false;
+      const caseObj = CASES_DATA[currentCaseIndex];
+
+      setAmirExpression('worried');
+      document.getElementById('case-badge-label').textContent = `KES ${caseObj.id} DARIPADA ${CASES_DATA.length} • SIASATAN AMIR`;
+      document.getElementById('case-title').textContent = caseObj.title;
+      document.getElementById('case-situation').textContent = caseObj.situation;
+      document.getElementById('case-question').textContent = caseObj.question;
+
+      // Reset Kotak Sasaran
+      const dropzone = document.getElementById('dropzone');
+      dropzone.className = 'col-span-8 dropzone-box rounded-3xl border-4 border-dashed border-cyan-400 p-5 flex flex-col items-center justify-center text-center min-h-[170px] relative';
+      document.getElementById('dropzone-empty-state').classList.remove('hidden');
+      document.getElementById('dropzone-filled-state').classList.add('hidden');
+      document.getElementById('dropzone-filled-state').classList.remove('flex');
+
+      // Sembunyikan Maklum Balas
+      const feedbackPanel = document.getElementById('feedback-panel');
+      feedbackPanel.classList.add('hidden');
+
+      // Bina 4 Kad Jawapan
+      const optionsContainer = document.getElementById('options-container');
+      optionsContainer.innerHTML = '';
+
+      const badgeColors = {
+        A: 'bg-cyan-400 text-slate-950',
+        B: 'bg-amber-400 text-slate-950',
+        C: 'bg-emerald-400 text-slate-950',
+        D: 'bg-purple-400 text-slate-950'
+      };
+
+      caseObj.options.forEach(opt => {
+        const card = document.createElement('div');
+        card.className = 'card-option rounded-2xl bg-slate-900/95 border-2 border-slate-600 hover:border-cyan-400 p-4 flex items-center justify-between gap-3 shadow-lg';
+        card.setAttribute('data-key', opt.key);
+        card.setAttribute('data-text', opt.text);
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3.5">
+            <span class="w-10 h-10 rounded-xl ${badgeColors[opt.key]} font-extrabold text-lg flex items-center justify-center shrink-0 shadow">
+              ${opt.key}
+            </span>
+            <span class="text-base sm:text-lg font-bold text-white leading-snug">
+              ${opt.text}
+            </span>
+          </div>
+          <span class="text-xs font-extrabold text-cyan-300 bg-cyan-500/10 border border-cyan-400/30 px-2.5 py-1 rounded-lg shrink-0">
+            👌 Cubit / Seret
+          </span>
+        `;
+
+        // Sokongan Sandaran Tetikus / Sentuhan (Drag & Drop + Klik)
+        setupPointerFallbackOnCard(card);
+        optionsContainer.appendChild(card);
+      });
+
+      updateHUD();
+      startCaseTimer();
+    }
+
+    // Pengesahan Jawapan Apabila Dilepaskan Di Dalam Kotak Sasaran
+    function evaluateDroppedAnswer(selectedKey) {
+      if (caseLocked) return;
+      caseLocked = true;
+      clearInterval(timerInterval);
+
+      const caseObj = CASES_DATA[currentCaseIndex];
+      const selectedOpt = caseObj.options.find(o => o.key === selectedKey);
+      const correctOpt = caseObj.options.find(o => o.key === caseObj.correctKey);
+      const isCorrect = selectedKey === caseObj.correctKey;
+
+      // Kemas kini Skor
+      if (isCorrect) {
+        totalScore += 10;
+        correctCasesCount += 1;
+        if (teams[activeTeamIndex]) {
+          teams[activeTeamIndex].score += 10;
+        }
+        playSound('correct');
+        launchConfetti();
+        setAmirExpression('happy');
+      } else {
+        playSound('wrong');
+        setAmirExpression('happy');
+      }
+
+      // Kemas kini Kotak Sasaran
+      const dropzone = document.getElementById('dropzone');
+      document.getElementById('dropzone-empty-state').classList.add('hidden');
+      const filledState = document.getElementById('dropzone-filled-state');
+      filledState.classList.remove('hidden');
+      filledState.classList.add('flex');
+
+      const droppedBadge = document.getElementById('dropped-card-badge');
+      const droppedText = document.getElementById('dropped-card-text');
+      droppedText.textContent = selectedOpt ? selectedOpt.text : '';
+
+      if (isCorrect) {
+        dropzone.className = 'col-span-8 dropzone-box locked-correct rounded-3xl border-4 p-5 flex flex-col items-center justify-center text-center min-h-[170px] relative';
+        droppedBadge.className = 'px-3.5 py-1 rounded-full text-xs font-extrabold uppercase bg-emerald-400 text-slate-950';
+        droppedBadge.textContent = '✅ JAWAPAN TEPAT (+10 MATA)';
+      } else {
+        dropzone.className = 'col-span-8 dropzone-box locked-wrong rounded-3xl border-4 p-5 flex flex-col items-center justify-center text-center min-h-[170px] relative';
+        droppedBadge.className = 'px-3.5 py-1 rounded-full text-xs font-extrabold uppercase bg-amber-300 text-slate-950';
+        droppedBadge.textContent = '💡 MARI KITA FAHAMI BERSAMA (0 MATA)';
+      }
+
+      // Tandakan kad-kad di sebelah kanan dan kunci supaya tidak boleh dihantar berulang kali
+      document.querySelectorAll('.card-option').forEach(c => {
+        const k = c.getAttribute('data-key');
+        c.style.pointerEvents = 'none';
+        if (k === caseObj.correctKey) {
+          c.className = 'card-option rounded-2xl bg-emerald-950/90 border-2 border-emerald-400 p-4 flex items-center justify-between gap-3 shadow-lg';
+        } else if (k === selectedKey && !isCorrect) {
+          c.className = 'card-option rounded-2xl bg-amber-950/70 border-2 border-amber-400 p-4 flex items-center justify-between gap-3 opacity-80';
+        } else {
+          c.className = 'card-option rounded-2xl bg-slate-900/50 border border-slate-700 p-4 flex items-center justify-between gap-3 opacity-50';
+        }
+      });
+
+      // Paparkan Panel Maklum Balas & Penerangan Ringkas
+      const feedbackPanel = document.getElementById('feedback-panel');
+      const feedbackIcon = document.getElementById('feedback-icon');
+      const feedbackTitle = document.getElementById('feedback-title');
+      const feedbackMessage = document.getElementById('feedback-message');
+      const feedbackExplanation = document.getElementById('feedback-explanation');
+      const btnNext = document.getElementById('btn-next-case');
+
+      feedbackPanel.classList.remove('hidden');
+      if (isCorrect) {
+        feedbackPanel.className = 'rounded-3xl p-5 border-2 border-emerald-400 bg-emerald-950/90 shadow-2xl transition-all';
+        feedbackIcon.textContent = '🌟';
+        feedbackTitle.textContent = `Syabas ${teams[activeTeamIndex] ? teams[activeTeamIndex].name : ''}! +10 Mata`;
+        feedbackMessage.textContent = caseObj.feedback;
+        feedbackExplanation.textContent = caseObj.explanation;
+      } else {
+        feedbackPanel.className = 'rounded-3xl p-5 border-2 border-amber-400 bg-indigo-950/95 shadow-2xl transition-all';
+        feedbackIcon.textContent = '🤝';
+        feedbackTitle.textContent = `Terima kasih kerana mencuba! Jawapan sebenar ialah: ${correctOpt.text}`;
+        feedbackMessage.textContent = caseObj.feedback;
+        feedbackExplanation.textContent = caseObj.explanation;
+      }
+
+      if (currentCaseIndex === CASES_DATA.length - 1) {
+        btnNext.innerHTML = `<span>Tamat Misi & Lihat Keputusan</span> <span>🏆</span>`;
+      } else {
+        btnNext.innerHTML = `<span>Kes Seterusnya</span> <span>➡️</span>`;
+      }
+
+      updateHUD();
+    }
+
+    // =========================================================================
+    // 6. KAWALAN SERET & LEPAS (CUBAAN TANGAN MEDIAPIPE + SANDARAN TETIKUS)
+    // =========================================================================
+    let grabbedCard = null;
+    let grabbedClone = null;
+    let grabSource = null; // 'hand' atau 'mouse'
+
+    function startGrabbingCard(cardEl, clientX, clientY, source) {
+      if (caseLocked || !cardEl) return;
+      if (grabbedCard) releaseAnyGrabbedCard(true);
+
+      grabbedCard = cardEl;
+      grabSource = source;
+      playSound('grab');
+
+      const rect = cardEl.getBoundingClientRect();
+      grabbedClone = cardEl.cloneNode(true);
+      grabbedClone.classList.add('grabbed');
+      grabbedClone.style.width = `${rect.width}px`;
+      grabbedClone.style.left = `${clientX - rect.width / 2}px`;
+      grabbedClone.style.top = `${clientY - rect.height / 2}px`;
+      document.body.appendChild(grabbedClone);
+
+      cardEl.style.opacity = '0.35';
+      updateDropzoneHighlight(clientX, clientY);
+    }
+
+    function moveGrabbedCard(clientX, clientY) {
+      if (!grabbedClone) return;
+      const w = grabbedClone.offsetWidth || 320;
+      const h = grabbedClone.offsetHeight || 72;
+      grabbedClone.style.left = `${clientX - w / 2}px`;
+      grabbedClone.style.top = `${clientY - h / 2}px`;
+      updateDropzoneHighlight(clientX, clientY);
+    }
+
+    function isPointInsideDropzone(x, y) {
+      const dz = document.getElementById('dropzone');
+      if (!dz) return false;
+      const r = dz.getBoundingClientRect();
+      // Berikan sedikit margin toleransi 24px supaya mesra murid Tahun 5
+      return (
+        x >= r.left - 24 &&
+        x <= r.right + 24 &&
+        y >= r.top - 24 &&
+        y <= r.bottom + 24
+      );
+    }
+
+    function updateDropzoneHighlight(x, y) {
+      const dz = document.getElementById('dropzone');
+      if (!dz || caseLocked) return;
+      if (isPointInsideDropzone(x, y)) {
+        dz.classList.add('active-hover');
+      } else {
+        dz.classList.remove('active-hover');
+      }
+    }
+
+    function releaseAnyGrabbedCard(cancelOnly, dropX, dropY) {
+      const dz = document.getElementById('dropzone');
+      if (dz) dz.classList.remove('active-hover');
+
+      if (!grabbedCard) return;
+      const key = grabbedCard.getAttribute('data-key');
+      grabbedCard.style.opacity = '1';
+
+      if (grabbedClone && grabbedClone.parentNode) {
+        grabbedClone.parentNode.removeChild(grabbedClone);
+      }
+      grabbedClone = null;
+      grabbedCard = null;
+      grabSource = null;
+
+      if (!cancelOnly && typeof dropX === 'number' && typeof dropY === 'number') {
+        if (isPointInsideDropzone(dropX, dropY)) {
+          evaluateDroppedAnswer(key);
+        }
+      }
+    }
+
+    // Sandaran Tetikus / Skrin Sentuh pada setiap kad
+    function setupPointerFallbackOnCard(cardEl) {
+      let startX = 0;
+      let startY = 0;
+      let pointerDown = false;
+
+      cardEl.addEventListener('pointerdown', (e) => {
+        if (caseLocked) return;
+        e.preventDefault();
+        pointerDown = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startGrabbingCard(cardEl, e.clientX, e.clientY, 'mouse');
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!pointerDown || grabSource !== 'mouse') return;
+        moveGrabbedCard(e.clientX, e.clientY);
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (!pointerDown || grabSource !== 'mouse') return;
+        pointerDown = false;
+        const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+        // Jika murid klik terus pada kad atau melepaskannya di dalam kotak sasaran
+        if (isPointInsideDropzone(e.clientX, e.clientY) || dist < 12) {
+          const key = cardEl.getAttribute('data-key');
+          releaseAnyGrabbedCard(true);
+          evaluateDroppedAnswer(key);
+        } else {
+          releaseAnyGrabbedCard(true);
+        }
+      });
+    }
+
+    // =========================================================================
+    // 7. SISTEM PENGESANAN TANGAN MEDIAPIPE MELALUI KAMERA WEB
+    // =========================================================================
+    let cameraActive = false;
+    let handsInstance = null;
+    let videoElement = document.getElementById('webcam-video');
+    let gameCanvas = document.getElementById('webcam-canvas');
+    let gameCtx = gameCanvas.getContext('2d');
+    let testCanvas = document.getElementById('test-webcam-canvas');
+    let testCtx = testCanvas.getContext('2d');
+
+    // Koordinat Penunjuk Maya dengan LERP (Kelancaran Pergerakan)
+    let targetCursorX = window.innerWidth / 2;
+    let targetCursorY = window.innerHeight / 2;
+    let smoothCursorX = window.innerWidth / 2;
+    let smoothCursorY = window.innerHeight / 2;
+    let isHandVisible = false;
+    let isPinching = false;
+    let pinchFramesCount = 0;
+    let releaseFramesCount = 0;
+    let lostHandFrames = 0;
+
+    function updateCameraStatusUI(camState, handState, pinchState) {
+      const camDot = document.getElementById('status-camera-dot');
+      const camText = document.getElementById('status-camera-text');
+      const handDot = document.getElementById('status-hand-dot');
+      const handText = document.getElementById('status-hand-text');
+
+      const modalCam = document.getElementById('modal-cam-status');
+      const modalHand = document.getElementById('modal-hand-status');
+      const modalPinch = document.getElementById('modal-pinch-status');
+      const liveBadge = document.getElementById('pinch-live-badge');
+
+      if (camState === 'active') {
+        camDot.className = 'w-3 h-3 rounded-full bg-emerald-400';
+        camText.textContent = 'Kamera aktif';
+        if (modalCam) {
+          modalCam.textContent = 'Kamera aktif';
+          modalCam.className = 'font-extrabold text-emerald-400 text-base mt-0.5';
+        }
+      } else if (camState === 'error') {
+        camDot.className = 'w-3 h-3 rounded-full bg-rose-500';
+        camText.textContent = 'Kamera tidak aktif (Guna Tetikus)';
+        if (modalCam) {
+          modalCam.textContent = 'Akses kamera ditolak / ralat';
+          modalCam.className = 'font-extrabold text-rose-400 text-base mt-0.5';
+        }
+      }
+
+      if (handState === 'detected') {
+        handDot.className = 'w-3 h-3 rounded-full bg-cyan-400';
+        handText.textContent = 'Tangan dikesan';
+        if (modalHand) {
+          modalHand.textContent = 'Tangan dikesan';
+          modalHand.className = 'font-extrabold text-cyan-300 text-base mt-0.5';
+        }
+      } else {
+        handDot.className = 'w-3 h-3 rounded-full bg-slate-400';
+        handText.textContent = 'Tangan tidak dikesan';
+        if (modalHand) {
+          modalHand.textContent = 'Tangan tidak dikesan';
+          modalHand.className = 'font-extrabold text-slate-400 text-base mt-0.5';
+        }
+      }
+
+      if (pinchState) {
+        if (modalPinch) {
+          modalPinch.textContent = '👌 CUBITAN AKTIF (Pinch!)';
+          modalPinch.className = 'font-extrabold text-amber-300 text-base mt-0.5';
+        }
+        if (liveBadge) {
+          liveBadge.textContent = '👌 CUBIT!';
+          liveBadge.className = 'px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-extrabold';
+        }
+      } else {
+        if (modalPinch) {
+          modalPinch.textContent = 'Terbuka (Belum mencubit)';
+          modalPinch.className = 'font-extrabold text-cyan-300 text-base mt-0.5';
+        }
+        if (liveBadge) {
+          liveBadge.textContent = isHandVisible ? '✋ Dikesan' : 'Tiada Tangan';
+          liveBadge.className = 'px-2 py-0.5 rounded bg-slate-800 text-slate-300';
+        }
+      }
+    }
+
+    // Gelung Animasi Penunjuk Tangan Maya (Supaya Sangat Lancar)
+    function updateVirtualCursorLoop() {
+      const cursorEl = document.getElementById('virtual-cursor');
+      const cursorLabel = document.getElementById('cursor-label');
+
+      if (cameraActive && isHandVisible) {
+        cursorEl.style.display = 'block';
+        smoothCursorX += (targetCursorX - smoothCursorX) * 0.35;
+        smoothCursorY += (targetCursorY - smoothCursorY) * 0.35;
+        cursorEl.style.transform = `translate3d(${smoothCursorX}px, ${smoothCursorY}px, 0)`;
+
+        if (isPinching) {
+          cursorEl.classList.add('pinching');
+          cursorLabel.textContent = 'CUBIT 👌';
+        } else {
+          cursorEl.classList.remove('pinching');
+          cursorLabel.textContent = 'TANGAN ✋';
+        }
+
+        // Kesan Hover pada Kad Jawapan atau Butang
+        highlightCardUnderHand(smoothCursorX, smoothCursorY);
+
+        if (grabSource === 'hand' && grabbedClone) {
+          moveGrabbedCard(smoothCursorX, smoothCursorY);
+        }
+      } else {
+        cursorEl.style.display = 'none';
+      }
+      requestAnimationFrame(updateVirtualCursorLoop);
+    }
+    requestAnimationFrame(updateVirtualCursorLoop);
+
+    function findCardAtPoint(x, y) {
+      const cards = document.querySelectorAll('.card-option');
+      for (const c of cards) {
+        const r = c.getBoundingClientRect();
+        if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+          return c;
+        }
+      }
+      return null;
+    }
+
+    function highlightCardUnderHand(x, y) {
+      document.querySelectorAll('.card-option').forEach(c => c.classList.remove('hovered-by-hand'));
+      if (!caseLocked && !grabbedCard) {
+        const hovered = findCardAtPoint(x, y);
+        if (hovered) hovered.classList.add('hovered-by-hand');
+      }
+    }
+
+    function drawHandOnCanvas(ctx, canvasEl, results) {
+      if (!ctx || !canvasEl) return;
+      canvasEl.width = 320;
+      canvasEl.height = 240;
+      ctx.save();
+      ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+      // Lukis imej kamera secara cermin (mirrored)
+      ctx.translate(canvasEl.width, 0);
+      ctx.scale(-1, 1);
+      if (results.image) {
+        ctx.drawImage(results.image, 0, 0, canvasEl.width, canvasEl.height);
+      }
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const lm = results.multiHandLandmarks[0];
+        const thumb = lm[4];
+        const index = lm[8];
+
+        const tx = thumb.x * canvasEl.width;
+        const ty = thumb.y * canvasEl.height;
+        const ix = index.x * canvasEl.width;
+        const iy = index.y * canvasEl.height;
+
+        // Pancaran Tenaga Magnetik (Magnetic Energy Beam) antara Ibu Jari & Telunjuk
+        ctx.beginPath();
+        ctx.moveTo(tx, ty);
+        ctx.lineTo(ix, iy);
+        ctx.strokeStyle = isPinching ? '#facc15' : '#38bdf8';
+        ctx.lineWidth = isPinching ? 5 : 2.5;
+        ctx.stroke();
+
+        // Titik Ibu Jari & Jari Telunjuk
+        [ {x: tx, y: ty}, {x: ix, y: iy} ].forEach(pt => {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, isPinching ? 8 : 6, 0, Math.PI * 2);
+          ctx.fillStyle = isPinching ? '#facc15' : '#22d3ee';
+          ctx.fill();
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+      }
+      ctx.restore();
+    }
+
+    function onHandResults(results) {
+      drawHandOnCanvas(gameCtx, gameCanvas, results);
+      drawHandOnCanvas(testCtx, testCanvas, results);
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        lostHandFrames = 0;
+        isHandVisible = true;
+
+        const lm = results.multiHandLandmarks[0];
+        const thumbTip = lm[4];
+        const indexTip = lm[8];
+
+        // Titik tengah antara ibu jari (4) dan jari telunjuk (8), dicerminkan pada paksi-X
+        const midX = 1 - (thumbTip.x + indexTip.x) / 2;
+        const midY = (thumbTip.y + indexTip.y) / 2;
+
+        // Pemetaan dengan sedikit margin supaya mudah capai seluruh skrin
+        const clampedX = Math.max(0, Math.min(1, (midX - 0.1) / 0.8));
+        const clampedY = Math.max(0, Math.min(1, (midY - 0.1) / 0.8));
+
+        targetCursorX = clampedX * window.innerWidth;
+        targetCursorY = clampedY * window.innerHeight;
+
+        // Kira jarak 2D antara ibu jari dan jari telunjuk
+        const pinchDist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
+        // Ambang cubitan dengan histeresis supaya tidak berkelip-kelip
+        const pinchThreshold = isPinching ? 0.085 : 0.062;
+
+        if (pinchDist < pinchThreshold) {
+          pinchFramesCount++;
+          releaseFramesCount = 0;
+          if (!isPinching && pinchFramesCount >= 2) {
+            isPinching = true;
+            handleHandPinchStart(smoothCursorX, smoothCursorY);
+          }
+        } else {
+          releaseFramesCount++;
+          pinchFramesCount = 0;
+          if (isPinching && releaseFramesCount >= 2) {
+            isPinching = false;
+            handleHandPinchEnd(smoothCursorX, smoothCursorY);
+          }
+        }
+
+        updateCameraStatusUI('active', 'detected', isPinching);
+      } else {
+        // Jika tangan hilang daripada kamera, jangan hantar jawapan secara rawak!
+        lostHandFrames++;
+        if (lostHandFrames > 6) {
+          isHandVisible = false;
+          isPinching = false;
+          pinchFramesCount = 0;
+          if (grabSource === 'hand' && grabbedCard) {
+            // Kembalikan kad ke tempat asal dengan selamat tanpa memilih jawapan rawak
+            releaseAnyGrabbedCard(true);
+          }
+          updateCameraStatusUI('active', 'none', false);
+        }
+      }
+    }
+
+    function handleHandPinchStart(x, y) {
+      if (caseLocked) {
+        // Benarkan cubit pada butang "Kes Seterusnya" jika kes sudah dikunci
+        const nextBtn = document.getElementById('btn-next-case');
+        if (nextBtn) {
+          const r = nextBtn.getBoundingClientRect();
+          if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+            nextBtn.click();
+          }
+        }
+        return;
+      }
+      const card = findCardAtPoint(x, y);
+      if (card) {
+        startGrabbingCard(card, x, y, 'hand');
+      }
+    }
+
+    function handleHandPinchEnd(x, y) {
+      if (grabSource === 'hand' && grabbedCard) {
+        releaseAnyGrabbedCard(false, x, y);
+      }
+    }
+
+    async function activateWebcamAndMediaPipe() {
+      const errorBox = document.getElementById('cam-error-box');
+      if (errorBox) errorBox.classList.add('hidden');
+
+      if (typeof window.Hands === 'undefined') {
+        updateCameraStatusUI('error', 'none', false);
+        if (errorBox) {
+          errorBox.classList.remove('hidden');
+          errorBox.textContent = 'Pustaka pengesanan tangan MediaPipe memerlukan sambungan internet untuk dimuatkan. Sila semak sambungan internet anda atau gunakan kawalan tetikus.';
+        }
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        updateCameraStatusUI('error', 'none', false);
+        if (errorBox) {
+          errorBox.classList.remove('hidden');
+          errorBox.textContent = 'Pelayar web ini tidak menyokong akses kamera web. Sila gunakan Google Chrome atau kawalan tetikus.';
+        }
+        return;
+      }
+
+      try {
+        if (!handsInstance) {
+          handsInstance = new window.Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`
+          });
+          handsInstance.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
+          });
+          handsInstance.onResults(onHandResults);
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480, facingMode: 'user' },
+          audio: false
+        });
+
+        videoElement.srcObject = stream;
+        await videoElement.play();
+
+        cameraActive = true;
+        document.getElementById('webcam-overlay-msg').classList.add('hidden');
+        document.getElementById('test-cam-placeholder').classList.add('hidden');
+        updateCameraStatusUI('active', 'none', false);
+
+        async function processVideoFrame() {
+          if (cameraActive && videoElement.readyState >= 2) {
+            try {
+              await handsInstance.send({ image: videoElement });
+            } catch (err) {
+              // Abaikan ralat bingkai tunggal
+            }
+          }
+          if (cameraActive) {
+            requestAnimationFrame(processVideoFrame);
+          }
+        }
+        requestAnimationFrame(processVideoFrame);
+
+      } catch (err) {
+        cameraActive = false;
+        updateCameraStatusUI('error', 'none', false);
+        if (errorBox) {
+          errorBox.classList.remove('hidden');
+          errorBox.textContent = 'Akses kamera web tidak dibenarkan atau kamera tidak ditemui. Jangan risau! Anda boleh bermain sepenuhnya menggunakan seret & lepas tetikus.';
+        }
+      }
+    }
+
+    // =========================================================================
+    // 8. NAVIGASI SKRIN & ACARA BUTANG (EVENT LISTENERS)
+    // =========================================================================
+    function showScreen(screenId) {
+      ['screen-start', 'screen-game', 'screen-end'].forEach(id => {
+        const el = document.getElementById(id);
+        if (id === screenId) {
+          el.classList.remove('hidden');
+          el.classList.add('flex');
+        } else {
+          el.classList.add('hidden');
+          el.classList.remove('flex');
+        }
+      });
+    }
+
+    function startMission() {
+      initAudio();
+      timerSecondsSetting = parseInt(document.getElementById('select-timer').value, 10);
+      currentCaseIndex = 0;
+      totalScore = 0;
+      correctCasesCount = 0;
+      activeTeamIndex = 0;
+      teams.forEach(t => { t.score = 0; });
+
+      showScreen('screen-game');
+      renderCurrentCase();
+
+      // Cuba hidupkan kamera secara automatik jika belum aktif
+      if (!cameraActive) {
+        activateWebcamAndMediaPipe();
+      }
+    }
+
+    function finishMission() {
+      clearInterval(timerInterval);
+      releaseAnyGrabbedCard(true);
+      playSound('fanfare');
+      launchConfetti();
+
+      showScreen('screen-end');
+
+      document.getElementById('end-total-score').textContent = `${totalScore} / 100`;
+      document.getElementById('end-correct-count').textContent = `${correctCasesCount} / ${CASES_DATA.length} Kes`;
+
+      const msgEl = document.getElementById('end-appreciation-msg');
+      if (totalScore >= 80) {
+        msgEl.textContent = 'Luar biasa! Anda memang Skuad Wira Anti-Buli yang sangat prihatin dan berani!';
+      } else if (totalScore >= 50) {
+        msgEl.textContent = 'Syabas! Anda telah banyak membantu Amir dan memahami tindakan yang selamat.';
+      } else {
+        msgEl.textContent = 'Usaha yang baik! Mari terus belajar cara membantu rakan dan melaporkan buli kepada guru.';
+      }
+
+      // Lencana Akhir
+      const badgesContainer = document.getElementById('end-badges-list');
+      badgesContainer.innerHTML = '';
+      const earnedBadges = [
+        { icon: '🔍', name: 'Detektif Prihatin', color: 'bg-cyan-500/20 border-cyan-300 text-cyan-200' },
+        { icon: '🛡️', name: 'Rakan Pembela', color: 'bg-amber-500/20 border-amber-300 text-amber-200' },
+        { icon: '🏆', name: 'Wira Anti-Buli', color: 'bg-emerald-500/20 border-emerald-300 text-emerald-200' }
+      ];
+      earnedBadges.forEach(b => {
+        const badgeEl = document.createElement('div');
+        badgeEl.className = `px-3.5 py-2 rounded-xl border-2 font-extrabold text-sm flex items-center gap-1.5 ${b.color}`;
+        badgeEl.innerHTML = `<span>${b.icon}</span> <span>${b.name}</span>`;
+        badgesContainer.appendChild(badgeEl);
+      });
+
+      // Ringkasan Markah Kumpulan
+      const teamsSummary = document.getElementById('end-teams-summary');
+      teamsSummary.innerHTML = '';
+      teams.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'p-3.5 rounded-xl bg-slate-800 border border-slate-600 text-center';
+        card.innerHTML = `
+          <div class="text-xs font-bold text-cyan-200">${t.name}</div>
+          <div class="text-2xl font-extrabold text-amber-300 mt-1">${t.score} Mata</div>
+        `;
+        teamsSummary.appendChild(card);
+      });
+    }
+
+    // Butang Mula Misi
+    document.getElementById('btn-start-mission').addEventListener('click', startMission);
+
+    // Butang Kes Seterusnya
+    document.getElementById('btn-next-case').addEventListener('click', () => {
+      if (currentCaseIndex < CASES_DATA.length - 1) {
+        currentCaseIndex++;
+        if (teams.length > 1) {
+          activeTeamIndex = (activeTeamIndex + 1) % teams.length;
+        }
+        renderCurrentCase();
+      } else {
+        finishMission();
+      }
+    });
+
+    // Butang Tukar Giliran Kumpulan
+    document.getElementById('btn-switch-team').addEventListener('click', () => {
+      if (teams.length > 0) {
+        activeTeamIndex = (activeTeamIndex + 1) % teams.length;
+        updateHUD();
+      }
+    });
+
+    // Butang Main Semula & Tamat Misi
+    document.getElementById('btn-restart-mission').addEventListener('click', () => {
+      startMission();
+    });
+    document.getElementById('btn-end-mission-early').addEventListener('click', () => {
+      finishMission();
+    });
+    document.getElementById('btn-play-again-end').addEventListener('click', () => {
+      showScreen('screen-start');
+    });
+
+    // Butang Bunyi
+    document.getElementById('btn-toggle-sound').addEventListener('click', (e) => {
+      soundEnabled = !soundEnabled;
+      e.currentTarget.textContent = soundEnabled ? '🔊 Bunyi: Hidup' : '🔇 Bunyi: Bisu';
+    });
+
+    // Modal Uji Kamera
+    function openCamModal() {
+      const modal = document.getElementById('modal-cam-test');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      if (!cameraActive) {
+        activateWebcamAndMediaPipe();
+      }
+    }
+    function closeCamModal() {
+      const modal = document.getElementById('modal-cam-test');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    document.getElementById('btn-open-cam-test').addEventListener('click', openCamModal);
+    document.getElementById('btn-start-cam-check').addEventListener('click', openCamModal);
+    document.getElementById('btn-enable-cam-inline').addEventListener('click', activateWebcamAndMediaPipe);
+    document.getElementById('btn-activate-cam-now').addEventListener('click', activateWebcamAndMediaPipe);
+    document.getElementById('btn-close-cam-modal').addEventListener('click', closeCamModal);
+    document.getElementById('btn-done-cam-modal').addEventListener('click', closeCamModal);
+
+    // Modal Panduan Guru
+    function openGuideModal() {
+      const m = document.getElementById('modal-guide');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+    function closeGuideModal() {
+      const m = document.getElementById('modal-guide');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+    document.getElementById('btn-open-guide').addEventListener('click', openGuideModal);
+    document.getElementById('btn-close-guide').addEventListener('click', closeGuideModal);
+    document.getElementById('btn-ok-guide').addEventListener('click', closeGuideModal);
+
+    // Butang Skrin Penuh Desktop
+    document.getElementById('btn-fullscreen-desktop').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Tambah Idea Refleksi Murid pada Skrin Penutup
+    document.getElementById('btn-add-reflection').addEventListener('click', () => {
+      const input = document.getElementById('reflection-input');
+      const val = input.value.trim();
+      if (!val) return;
+      const chip = document.createElement('span');
+      chip.className = 'px-3.5 py-2 rounded-xl bg-amber-400/20 border border-amber-300 text-amber-200 font-bold text-sm';
+      chip.textContent = `🌟 ${val}`;
+      document.getElementById('reflection-ideas-list').appendChild(chip);
+      input.value = '';
+      playSound('correct');
+    });
+  </script>
+</body>
+</html>
